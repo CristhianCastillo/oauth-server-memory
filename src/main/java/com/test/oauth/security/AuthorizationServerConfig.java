@@ -1,5 +1,6 @@
 package com.test.oauth.security;
 
+import com.test.oauth.security.custom.EnhancedAuthenticationKeyGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +73,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
         builder.withClient("test-app")
                 .secret(passwordEncoder.encode("12345"))
                 .scopes("read", "write")
-                .authorizedGrantTypes("password", "refresh_token")
+                .authorizedGrantTypes("password", "refresh_token", "IMPLICIT")
                 .accessTokenValiditySeconds(43200)
                 .refreshTokenValiditySeconds(2592000)
                 .and();
@@ -107,11 +108,14 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
     /**
      * Save Token in memory
+     *
      * @return
      */
     @Bean
     public InMemoryTokenStore tokenStores() {
-        return new InMemoryTokenStore();
+        InMemoryTokenStore inMemoryTokenStore = new InMemoryTokenStore();
+        inMemoryTokenStore.setAuthenticationKeyGenerator(new EnhancedAuthenticationKeyGenerator());
+        return inMemoryTokenStore;
     }
 
     @Bean
