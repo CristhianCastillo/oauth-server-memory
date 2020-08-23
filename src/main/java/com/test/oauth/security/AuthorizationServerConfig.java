@@ -1,5 +1,6 @@
 package com.test.oauth.security;
 
+import com.test.oauth.exception.custom.CustomOauthException;
 import com.test.oauth.security.custom.EnhancedAuthenticationKeyGenerator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -7,9 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.common.exceptions.OAuth2Exception;
 import org.springframework.security.oauth2.config.annotation.builders.InMemoryClientDetailsServiceBuilder;
 import org.springframework.security.oauth2.config.annotation.configurers.ClientDetailsServiceConfigurer;
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
@@ -97,6 +102,22 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
                 .tokenStore(tokenStores()) // For save token in memory
                 .accessTokenConverter(accessTokenConverter())
                 .userDetailsService(userService)
+                // Integrate the Our CustomOauthException in the OAuth2.
+                .exceptionTranslator(exception -> {
+                    if (exception instanceof OAuth2Exception) {
+                        OAuth2Exception oAuth2Exception = (OAuth2Exception) exception;
+                        return ResponseEntity
+                                .status(HttpStatus.UNAUTHORIZED)
+                                .body(new CustomOauthException(oAuth2Exception.getMessage(), HttpStatus.UNAUTHORIZED));
+                    } else if (exception instanceof InternalAuthenticationServiceException) {
+                        InternalAuthenticationServiceException oAuth2Exception = (InternalAuthenticationServiceException) exception;
+                        return ResponseEntity
+                                .status(HttpStatus.UNAUTHORIZED)
+                                .body(new CustomOauthException(oAuth2Exception.getMessage(), HttpStatus.UNAUTHORIZED));
+                    } else {
+                        throw exception;
+                    }
+                })
                 .tokenEnhancer(tokenEnhancerChain);
     }
 
