@@ -61,7 +61,7 @@ public class ResourceServerConfig extends ResourceServerConfigurerAdapter {
     @Override
     public void configure(HttpSecurity http) throws Exception {
         http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-        http.authorizeRequests().antMatchers("/oauth/**", "/api/users/create").permitAll();
+        http.authorizeRequests().antMatchers("/oauth/**", "/api/users/create", "/security/oauth/token").permitAll();
         http.authorizeRequests().anyRequest().authenticated().and()
                 .exceptionHandling().authenticationEntryPoint(unauthorizedHandler).and()
                 .cors().configurationSource(corsConfigurationSource());
