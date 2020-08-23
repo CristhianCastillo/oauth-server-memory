@@ -5,10 +5,13 @@ import com.test.oauth.service.IUserService;
 import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.security.oauth2.provider.token.ConsumerTokenServices;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletRequest;
@@ -55,7 +58,7 @@ public class UserController {
         byte[] encodeAuth = Base64.encodeBase64(auth.getBytes(StandardCharsets.ISO_8859_1));
         String authValue = "Basic " + new String(encodeAuth);
 
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -68,7 +71,18 @@ public class UserController {
 
         HttpEntity<?> entity = new HttpEntity<>(bodyRequest, headers);
 
-        return restTemplate.exchange("http://localhost:8080/oauth/token", HttpMethod.POST, entity, HashMap.class);
+        try {
+            ResponseEntity<?> response = restTemplate.exchange("http://localhost:8080/oauth/token", HttpMethod.POST, entity, HashMap.class);
+            return response;
+        } catch (HttpStatusCodeException e) {
+            if (e.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                return new ResponseEntity<>(e.getResponseBodyAsString(), HttpStatus.UNAUTHORIZED);
+            } else {
+                return new ResponseEntity("", HttpStatus.UNAUTHORIZED);
+            }
+        } catch (RestClientException e) {
+            return new ResponseEntity("", HttpStatus.UNAUTHORIZED);
+        }
     }
 
     // Secure.
